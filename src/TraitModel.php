@@ -9,22 +9,30 @@ trait TraitModel
     private $query;
     private static $_instance;
 
-
-    //根据参数获取数据列表
+    //根据参数获取list
     public function getListByParameters($parameters = [], $page = 0, $rows = 0, $select = ['*'], $orderBy = '', $sort = 'asc')
     {
-        $this->buildQuery($parameters)->select($select);
+        $this->buildQuery($parameters);
         if ($page) $this->query->skip(($page - 1) * $rows)->take($rows);
         if ($orderBy) $this->query->orderBy($orderBy, $sort);
-        return $this->decoratorHandle($this->query->get()->toArray());
+        return $this->decoratorHandle($this->query->select($select)->get()->toArray());
+    }
+
+    //根据参数获取list & count
+    public function getPageByParameters()
+    {
+        return [
+            'list' => call_user_func_array([$this, 'getListByParameters'], func_get_args()),
+            'count' => $this->query->count()
+        ];
     }
 
     //根据参数获取单条数据
     public function getFirstByParameters($parameters = [], $select = ['*'], $orderBy = '', $sort = 'asc')
     {
-        $this->buildQuery($parameters)->select($select);
+        $this->buildQuery($parameters);
         if ($orderBy) $this->query->orderBy($orderBy, $sort);
-        $ret = $this->query->first();
+        $ret = $this->query->select($select)->first();
         return $ret ? $this->decoratorHandle([$ret->toArray()])[0] : [];
     }
 
