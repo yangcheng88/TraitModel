@@ -22,7 +22,7 @@ TestModel::instance()->create();
 ```
 
 
-#### 方法demo
+#### 方法demo(以下方法在TestModel中实现)
 *保存数据时给数据对象赋值逻辑*
 ``` php
 private function store($data)
