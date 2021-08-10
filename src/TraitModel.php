@@ -4,10 +4,15 @@ namespace Yangcheng88\TraitModel;
 
 trait TraitModel
 {
-    private $parameters;
-    private $model;
-    private $query;
     private static $_instance;
+
+    private $parameters;
+
+    private $model;
+
+    private $query;
+    
+    private $data;
 
     //根据参数获取list
     public function getListByParameters($parameters = [], $page = 0, $rows = 0, $select = ['*'], $orderBy = '', $sort = 'asc')
@@ -15,7 +20,7 @@ trait TraitModel
         $this->buildQuery($parameters);
         if ($page) $this->query->skip(($page - 1) * $rows)->take($rows);
         if ($orderBy) $this->query->orderBy($orderBy, $sort);
-        return $this->decoratorHandle($this->query->select($select)->get()->toArray());
+        return $this->listHandle($this->query->select($select)->get()->toArray());
     }
 
     //根据参数获取list & count
@@ -23,7 +28,7 @@ trait TraitModel
     {
         return [
             'list' => call_user_func_array([$this, 'getListByParameters'], func_get_args()),
-            'count' => $this->query->count()
+            'count' => $this->query->skip(0)->count()//skip 0 防止有分页时count错误
         ];
     }
 
@@ -33,7 +38,7 @@ trait TraitModel
         $this->buildQuery($parameters);
         if ($orderBy) $this->query->orderBy($orderBy, $sort);
         $ret = $this->query->select($select)->first();
-        return $ret ? $this->decoratorHandle([$ret->toArray()])[0] : [];
+        return $ret ? $this->listHandle([$ret->toArray()])[0] : [];
     }
 
     //根据参数获取查询器
@@ -66,21 +71,50 @@ trait TraitModel
     }
 
     //get数据装饰
-    public function decoratorHandle($data)
+    private function listHandle($data)
     {
+        foreach ($data as &$row) {
+            $row = $this->rowHandle($row);
+        }
         return $data;
+    }
+
+    //行数据装饰
+    private function rowHandle($row)
+    {
+        return $row;
+    }
+
+    /*
+    private function fieldFilter($data, $map)
+    {
+        foreach ($map as $key=>$val) {
+            if (isset($data[$key])) {
+                $this->model->$val = $data[$key];
+            }
+        }
+    }
+    */
+    //判断属性存在后设置model属性
+    private function set($dataKey, $modelKey = '')
+    {
+        $modelKey = empty($modelKey) ? $dataKey : $modelKey;
+        if (isset($this->data[$dataKey])) {
+            $this->model->$modelKey = $this->data[$dataKey];
+        }
     }
 
     //创建数据
     public function create($data)
     {
-        $this->initModel('this')->store($data)->save();
+        $this->data = $data;
+        $this->initModel('this')->store()->save();
         $primaryKey = $this->model->primaryKey;
-        return $this->createHandle($this->model->$primaryKey, $data);
+        return $this->createHandle($this->model->$primaryKey);
     }
 
     //创建数据完成后...
-    public function createHandle($id, $data)
+    public function createHandle($id)
     {
         return $id;
     }
@@ -88,12 +122,14 @@ trait TraitModel
     //更新数据
     public function update($data)
     {
+        $this->data = $data;
         $this->model = $this->initModel()->find($data[$this->model->primaryKey]);
-        return $this->updateHandle($this->store($data)->save(), $data);
+        if (!$this->model) return false;
+        return $this->updateHandle($this->store()->save());
     }
 
     //更新数据完成后...
-    public function updateHandle($ret, $data)
+    public function updateHandle($ret)
     {
         return $ret;
     }
@@ -107,7 +143,7 @@ trait TraitModel
     //根据条件删除数据
     public function deleteByParameters($parameters)
     {
-        return $this->initModel()->where($parameters)->delete();
+        return $this->buildQuery($parameters)->delete();
     }
 
     //静态获取Model实例
