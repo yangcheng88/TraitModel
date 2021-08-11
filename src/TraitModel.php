@@ -1,6 +1,7 @@
 <?php
 
 namespace Yangcheng88\TraitModel;
+use Illuminate\Support\Facades\Redis;
 
 trait TraitModel
 {
@@ -144,6 +145,17 @@ trait TraitModel
     public function deleteByParameters($parameters)
     {
         return $this->buildQuery($parameters)->delete();
+    }
+
+    //redis cache set get
+    public function getCacheData($key, $func, $time = 0)
+    {
+        if ($data = Redis::get($key)) return json_decode($data, true);
+
+        $data = $func();
+        $setData = json_encode($data);
+        $time > 0 ? Redis::setex($key, $time, $setData) : Redis::set($key, $setData);
+        return $data;
     }
 
     //静态获取Model实例

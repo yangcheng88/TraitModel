@@ -34,9 +34,9 @@ private function store($data)
 }
 ```
 
-*获取数据后数据装饰逻辑*
+*获取数据后对数据列表装饰逻辑*
 ``` php
-private function decoratorHandle($data)
+private function listHandle($data)
 {
     foreach ($data as &$d) {
         $d['route'] = trim($d['route'], '/');
@@ -44,6 +44,16 @@ private function decoratorHandle($data)
     return $data;
 }
 ```
+
+*获取数据后对数据行装饰逻辑*
+``` php
+private function rowHandle($data)
+{
+    $data['test'] = 123;
+    return $data;
+}
+```
+
 
 *处理特殊查询条件逻辑*
 ``` php
@@ -77,4 +87,16 @@ public function updateHandle($ret, $data)
 {
     return $ret;
 }
+```
+
+*判断属性存在后设置model属性*
+``` php
+$this->set('datakey');
+```
+
+*判断redis缓存是否存在，不存在写入缓存，返回数据*
+``` php
+$this->getCacheData('cms_all_routes', function(){
+    return $this->getQueryByParameters()->pluck('route')->toArray();
+}, 3);
 ```
