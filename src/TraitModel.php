@@ -148,7 +148,7 @@ trait TraitModel
     }
 
     //redis cache set get
-    public function getCacheData($key, $func, $time = 0)
+    public static function getCacheData($key, $func, $time = 0)
     {
         if ($data = Redis::get($key)) return json_decode($data, true);
 
